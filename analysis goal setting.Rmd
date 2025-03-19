@@ -1,0 +1,356 @@
+---
+title: "analysis goal setting"
+author: "Denise Partl"
+date: "2025-02-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(dplyr)
+library(psych)
+library(misty)
+library(tidyverse)
+library(ggplot2)
+library(carData)
+library(car)
+
+
+setsource()
+#list.files("../Data/")
+data_goalsetting_TG1 <- read.csv("../Data/export_TG1goalsetting.csv")
+data_goalsetting_TG2 <- read.csv("../Data/export_TG2goalsetting.csv")
+
+```
+
+TG1/2 data preparation
+
+```{r daten sehen TG1}
+
+dim(data_goalsetting_TG1)   # Anzahl Zeilen/Spalten
+head(data_goalsetting_TG1)  # erste 6 Fälle
+tail(data_goalsetting_TG1)  # letzte 6 Fälle
+
+data_goalsetting_TG1 |> 
+  select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT) |>
+  filter(GOAL_MEAT != "<no-response>")
+```
+
+```{r observing data TG2}
+
+data_goalsetting_TG2 |> 
+  select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT) |>
+  filter(GOAL_MEAT != "<no-response>")
+
+```
+
+```{r merge and clean data }
+
+# merge TG1 and 2
+data_goalsetting_TG12 <- bind_rows(data_goalsetting_TG1, data_goalsetting_TG2)
+
+# create vector with variables for faster filtering
+test_variables <- c("GOAL_MEAT", "MEAL_GOAL_RT", "ANIMALPRODUCTS_GOAL_RT")
+
+
+
+clean_data_goalsetting_TG12 <- data_goalsetting_TG12 %>%
+  select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT, MEAL_GOAL_RT, ANIMALPRODUCTS_GOAL_RT) %>%
+  mutate(
+    across(test_variables, as.numeric) # Apply as.numeric to all test variables
+  ) %>%
+  filter(
+    across(test_variables, ~ . != "<no-response>" & !is.na(.)) #filter no response and na data
+  )
+  
+
+# clean_data_goalsetting_TG2 <- data_goalsetting_TG2 %>%
+#   select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT, MEAL_GOAL_RT, ANIMALPRODUCTS_GOAL_RT
+#          ) %>%
+#   mutate(
+#     GOAL_MEAT = as.numeric(GOAL_MEAT),
+#     MEAL_GOAL_RT = as.numeric(MEAL_GOAL_RT),
+#     ANIMALPRODUCTS_GOAL_RT = as.numeric(ANIMALPRODUCTS_GOAL_RT)
+#   ) %>%
+#   filter(GOAL_MEAT != "<no-response>",
+#          MEAL_GOAL_RT != "<no-response>",
+#          ANIMALPRODUCTS_GOAL_RT != "<no-response>",
+#          !is.na(GOAL_MEAT),
+#          !is.na(MEAL_GOAL_RT),
+#         !is.na(ANIMALPRODUCTS_GOAL_RT)
+#          )
+#   
+
+
+#clean_data_goalsetting_TG12 <- data_goalsetting_TG12 |> 
+ # select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT,MEAL_GOAL_RT) |>
+  #filter(GOAL_MEAT != "<no-response>",
+#         MEAL_GOAL_RT != "<no-response>", MEAL_GOAL_RT > 1000) |>
+#  mutate(GOAL_MEAT = as.numeric(GOAL_MEAT))
+#
+descript(GOAL_MEAT, data = clean_data_goalsetting_TG12, print = "all")
+
+
+
+```
+
+```{r visualisation before removing outliers}
+
+# plot to observe distribution
+
+ggplot(clean_data_goalsetting_TG12, aes(x = GOAL_MEAT)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  theme_minimal()
+
+ggplot(clean_data_goalsetting_TG12, aes(x = MEAL_GOAL_RT)) +
+  geom_histogram(binwidth = 100, fill = "pink") +
+  theme_minimal()
+
+ggplot(clean_data_goalsetting_TG12, aes(x = ANIMALPRODUCTS_GOAL_RT)) +
+  geom_histogram(binwidth = 100, fill = "green") +
+  theme_minimal()
+
+# ggplot(clean_data_goalsetting_TG1, aes(x = GOAL_MEAT)) +
+#   geom_histogram(binwidth = 5, fill = "pink", color = "black") +
+#   theme_minimal()
+# 
+# ggplot(clean_data_goalsetting_TG2, aes(x = GOAL_MEAT)) +
+#   geom_histogram(binwidth = 5, fill = "green", color = "black") +
+#   theme_minimal()
+
+```
+
+```{r detect outliers}
+
+# Function to detect outliers using 1.5 * IQR
+detect_outliers <- function(data, column_name) {
+  Q1 <- quantile(data[[column_name]], 0.25)
+  Q3 <- quantile(data[[column_name]], 0.75)
+  IQR <- IQR(data[[column_name]])
+  lower_bound <- Q1 - 1.5 * IQR
+  upper_bound <- Q3 + 1.5 * IQR
+  outliers <- subset(data, data[[column_name]] < lower_bound | data[[column_name]] > upper_bound)
+  return(outliers)
+}
+
+# Detect outliers for MEAL_GOAL_RT and print
+outliers_MEAL_GOAL_RT <- detect_outliers(clean_data_goalsetting_TG12, "MEAL_GOAL_RT")
+
+cat("Outliers for MEAL_GOAL_RT:\n") #prints the lables!
+print(dim(outliers_MEAL_GOAL_RT))
+
+# Detect outliers for GOAL_meat and print
+outliers_GOAL_MEAT <- detect_outliers(clean_data_goalsetting_TG12, "GOAL_MEAT")
+
+cat("Outliers for GOAL_meat:\n")
+print(dim(outliers_meat))
+ 
+# Detect outliers for GOAL_animal_products and print
+outliers_ANIMALPRODUCTS_GOAL_RT <- detect_outliers(clean_data_goalsetting_TG12, "ANIMALPRODUCTS_GOAL_RT")
+
+cat("\nOutliers for GOAL_animal_products:\n")
+print(dim(outliers_animal_products))
+
+
+
+
+# # test if there are outliers 1.5 times the interquartile range
+# 
+# #find Q1, Q3, and interquartile range for values in column A
+# Q1 <- quantile(clean_data_goalsetting_TG12$MEAL_GOAL_RT, .25)
+# Q3 <- quantile(clean_data_goalsetting_TG12$MEAL_GOAL_RT, .75)
+# IQR <- IQR(clean_data_goalsetting_TG12$MEAL_GOAL_RT)
+# 
+# #only keep rows in dataframe that have values outside 1.5*IQR of Q1 and Q3
+# outliers <- subset(clean_data_goalsetting_TG12, 
+#                       !(clean_data_goalsetting_TG12$MEAL_GOAL_RT > (Q1 - 1.5*IQR) 
+#                       & clean_data_goalsetting_TG12$MEAL_GOAL_RT < (Q3 + 1.5*IQR)
+#                       ))
+#                       
+# 
+# #view row and column count of new data frame
+# dim(outliers) 
+```
+
+```{r remove outliers}
+
+combined_outliers <- bind_rows(outliers_MEAL_GOAL_RT, outliers_GOAL_MEAT, outliers_ANIMALPRODUCTS_GOAL_RT) %>% distinct()
+
+clean_data_goalsetting_TG12 <- clean_data_goalsetting_TG12 %>% anti_join(combined_outliers, by = "PARTICIPANT_ID")
+
+
+```
+
+```{r visualisation after removing outliers}
+
+# plot to observe distribution
+
+ggplot(clean_data_goalsetting_TG12, aes(x = GOAL_MEAT)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  theme_minimal()
+
+ggplot(clean_data_goalsetting_TG12, aes(x = MEAL_GOAL_RT)) +
+  geom_histogram(binwidth = 100, fill = "pink") +
+  theme_minimal()
+
+ggplot(clean_data_goalsetting_TG12, aes(x = ANIMALPRODUCTS_GOAL_RT)) +
+  geom_histogram(binwidth = 100, fill = "green") +
+  theme_minimal()
+
+# ggplot(clean_data_goalsetting_TG1, aes(x = GOAL_MEAT)) +
+#   geom_histogram(binwidth = 5, fill = "pink", color = "black") +
+#   theme_minimal()
+# 
+# ggplot(clean_data_goalsetting_TG2, aes(x = GOAL_MEAT)) +
+#   geom_histogram(binwidth = 5, fill = "green", color = "black") +
+#   theme_minimal()
+
+```
+
+Assumptions for Pearson Correlation
+
+```{r test linearity MEAL_GOAL_RT-Goal meat }
+
+# Perform Linear Regression
+linear_model <- lm(clean_data_goalsetting_TG12$MEAL_GOAL_RT ~ clean_data_goalsetting_TG12$GOAL_MEAT)
+
+# scatterplot to observe linearity
+plot(clean_data_goalsetting_TG12$GOAL_MEAT, clean_data_goalsetting_TG12$MEAL_GOAL_RT,
+     xlab = "goalmeat",
+     ylab = "time taken",
+     main = "Scatterplot of meat goal and time of desicion")
+
+# Add regression line
+abline(linear_model, col = "red") # col = "red" macht die Linie rot, du kannst jede Farbe wählen.
+
+# Print the summary of the linear model
+summary(linear_model)
+
+```
+
+```{r test linearity ANIMALPRODUCTS_GOAL_RT-goal meat}
+
+# Perform Linear Regression
+linear_model <- lm(clean_data_goalsetting_TG12$ANIMALPRODUCTS_GOAL_RT ~ clean_data_goalsetting_TG12$GOAL_MEAT)
+
+# scatterplot to observe linearity
+plot(clean_data_goalsetting_TG12$GOAL_MEAT, clean_data_goalsetting_TG12$ANIMALPRODUCTS_GOAL_RT,
+     xlab = "goalmeat",
+     ylab = "time taken",
+     main = "Scatterplot of meat goal and time of decision")
+
+# Add regression line
+abline(linear_model, col = "red")
+
+# Print the summary of the linear model
+summary(linear_model)
+
+```
+
+```{r test linearity ANIMALPRODUCTS_GOAL_RT-meal goal RT}
+# Perform Linear Regression
+linear_model <- lm(clean_data_goalsetting_TG12$ANIMALPRODUCTS_GOAL_RT ~ clean_data_goalsetting_TG12$MEAL_GOAL_RT)
+
+# scatterplot to observe linearity
+plot(clean_data_goalsetting_TG12$MEAL_GOAL_RT, clean_data_goalsetting_TG12$ANIMALPRODUCTS_GOAL_RT,
+     xlab = "time taken for meat goal",
+     ylab = "time taken for animal products goal",
+     main = "Scatterplot of meat goal time and animal product goal time")
+
+# Add regression line
+abline(linear_model, col = "red")
+
+# Print the summary of the linear model
+summary(linear_model)
+```
+
+```{r test normality}
+
+shapiro.test(clean_data_goalsetting_TG12$GOAL_MEAT)
+
+shapiro.test(clean_data_goalsetting_TG12$MEAL_GOAL_RT)
+
+shapiro.test(clean_data_goalsetting_TG12$ANIMALPRODUCTS_GOAL_RT)
+
+# The test calculates a W statistic, which compares the observed data to the 
+# expected data if it follows a normal distribution. A small W value indicates 
+# that the data deviates significantly from a normal distribution.
+
+# we want a p-value higher than .05
+
+```
+
+```{r create a correlation matrix}
+
+#the variables we want to include in the correlation matrix
+
+data <- clean_data_goalsetting_TG12[ , c("GOAL_MEAT", "MEAL_GOAL_RT", "ANIMALPRODUCTS_GOAL_RT")]
+
+cor(data)
+
+```
+
+Assumptions of Multiple Linear Regression
+
+```{r test Multicollinearity ANIMALPRODUCTS_GOAL_RT-meal goal RT }
+
+# info generell voraussetzungn für lineare regression :
+# https://www.statology.org/multiple-linear-regression-assumptions/
+
+# Info über Multikollinearität, wann nicht so wichtig:
+# https://statisticalhorizons.com/multicollinearity/
+# https://www.statology.org/variance-inflation-factor-r/ 
+
+
+regression_model <- lm(GOAL_MEAT ~ ANIMALPRODUCTS_GOAL_RT + MEAL_GOAL_RT, data = clean_data_goalsetting_TG12)
+
+
+vif(regression_model)
+
+#under 2,5 sehr gut, über 5 schlecht
+
+```
+
+```{r test intependence, durbin watson test }
+
+# https://www.statology.org/durbin-watson-test/
+
+durbinWatsonTest(regression_model)
+
+# we want to keep the null hypotheses p-value higher than 0.05!
+# here 0.4-also sehr hoch!
+
+#The test statistic always ranges from 0 to 4 where:
+# d = 2 indicates no autocorrelation
+# d < 2 indicates positive serial correlation
+# d > 2 indicates negative serial correlation
+# In general, if d is less than 1.5 or greater than 2.5 
+# then there is potentially a serious autocorrelation problem.
+# hier 1.838863 also ok!
+
+```
+
+```{r test Homoscedasticity}
+
+# scatterplot to observe homoscedasticity
+std_residuals <- rstandard(regression_model)
+fitted_values <- fitted(regression_model)
+
+plot(fitted_values, std_residuals,
+     xlab = "Predicted values",
+     ylab = "Standardized residuals",
+     main = "Standardized Residuals vs. Fitted")
+
+# es sollte kein lautsprecher sein sondern gleichmäßig verteilt.
+# Eigentlich hier nicht aber auch komisch!
+
+```
+
+```{ r test Multivariate Normality}
+
+```
+
+
+
+
+
