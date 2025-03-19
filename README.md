@@ -2,7 +2,11 @@
 
 ## Description
 
-This repository contains the R code and data analysis for my thesis, "[Your Thesis Title]," which examines a varitey of variables correlation on setting a goal for meat reduction. The study investigated [XXX] psychology students with a pretest and a 2 week long daily questionnaire. Following this, the participants would set a goal for reducting their meat reduction for th efollowing 4 weeks.
+This repository contains the R code and data analysis for my thesis, "[Your Thesis Title]," 
+which examines a varitey of variables correlation on setting a goal for meat reduction. 
+The study investigated [XXX] psychology students with a pretest and a 2 week long daily 
+questionnaire. Following this, the participants would set a goal for reducting their 
+meat reduction for th efollowing 4 weeks.
 
 ## Files
 

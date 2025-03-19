@@ -152,8 +152,6 @@ cat("\nOutliers for GOAL_animal_products:\n")
 print(dim(outliers_animal_products))
 
 
-
-
 # # test if there are outliers 1.5 times the interquartile range
 # 
 # #find Q1, Q3, and interquartile range for values in column A
