@@ -25,7 +25,7 @@ data_goalsetting_TG2 <- read.csv("../Data/export_TG2goalsetting.csv")
 
 TG1/2 data preparation
 
-```{r daten sehen TG1}
+```{r observing data TG1}
 
 dim(data_goalsetting_TG1)   # Anzahl Zeilen/Spalten
 head(data_goalsetting_TG1)  # erste 6 Fälle
@@ -50,44 +50,20 @@ data_goalsetting_TG2 |>
 data_goalsetting_TG12 <- bind_rows(data_goalsetting_TG1, data_goalsetting_TG2)
 
 # create vector with variables for faster filtering
-test_variables <- c("GOAL_MEAT", "MEAL_GOAL_RT", "ANIMALPRODUCTS_GOAL_RT")
+test_variables_vector <- c("GOAL_MEAT", "MEAL_GOAL_RT", "ANIMALPRODUCTS_GOAL_RT")
 
 
 
 clean_data_goalsetting_TG12 <- data_goalsetting_TG12 %>%
   select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT, MEAL_GOAL_RT, ANIMALPRODUCTS_GOAL_RT) %>%
   mutate(
-    across(test_variables, as.numeric) # Apply as.numeric to all test variables
+    across(test_variables_vector, as.numeric) # Apply as.numeric to all test variables
   ) %>%
   filter(
-    across(test_variables, ~ . != "<no-response>" & !is.na(.)) #filter no response and na data
+    across(test_variables_vector, ~ . != "<no-response>" & !is.na(.)) #filter no response and na data
   )
   
 
-# clean_data_goalsetting_TG2 <- data_goalsetting_TG2 %>%
-#   select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT, MEAL_GOAL_RT, ANIMALPRODUCTS_GOAL_RT
-#          ) %>%
-#   mutate(
-#     GOAL_MEAT = as.numeric(GOAL_MEAT),
-#     MEAL_GOAL_RT = as.numeric(MEAL_GOAL_RT),
-#     ANIMALPRODUCTS_GOAL_RT = as.numeric(ANIMALPRODUCTS_GOAL_RT)
-#   ) %>%
-#   filter(GOAL_MEAT != "<no-response>",
-#          MEAL_GOAL_RT != "<no-response>",
-#          ANIMALPRODUCTS_GOAL_RT != "<no-response>",
-#          !is.na(GOAL_MEAT),
-#          !is.na(MEAL_GOAL_RT),
-#         !is.na(ANIMALPRODUCTS_GOAL_RT)
-#          )
-#   
-
-
-#clean_data_goalsetting_TG12 <- data_goalsetting_TG12 |> 
- # select(PARTICIPANT_ID, STARTED_TS, GOAL_MEAT,MEAL_GOAL_RT) |>
-  #filter(GOAL_MEAT != "<no-response>",
-#         MEAL_GOAL_RT != "<no-response>", MEAL_GOAL_RT > 1000) |>
-#  mutate(GOAL_MEAT = as.numeric(GOAL_MEAT))
-#
 descript(GOAL_MEAT, data = clean_data_goalsetting_TG12, print = "all")
 
 
@@ -110,13 +86,6 @@ ggplot(clean_data_goalsetting_TG12, aes(x = ANIMALPRODUCTS_GOAL_RT)) +
   geom_histogram(binwidth = 100, fill = "green") +
   theme_minimal()
 
-# ggplot(clean_data_goalsetting_TG1, aes(x = GOAL_MEAT)) +
-#   geom_histogram(binwidth = 5, fill = "pink", color = "black") +
-#   theme_minimal()
-# 
-# ggplot(clean_data_goalsetting_TG2, aes(x = GOAL_MEAT)) +
-#   geom_histogram(binwidth = 5, fill = "green", color = "black") +
-#   theme_minimal()
 
 ```
 
@@ -143,31 +112,15 @@ print(dim(outliers_MEAL_GOAL_RT))
 outliers_GOAL_MEAT <- detect_outliers(clean_data_goalsetting_TG12, "GOAL_MEAT")
 
 cat("Outliers for GOAL_meat:\n")
-print(dim(outliers_meat))
+print(dim(outliers_GOAL_MEAT))
  
 # Detect outliers for GOAL_animal_products and print
 outliers_ANIMALPRODUCTS_GOAL_RT <- detect_outliers(clean_data_goalsetting_TG12, "ANIMALPRODUCTS_GOAL_RT")
 
 cat("\nOutliers for GOAL_animal_products:\n")
-print(dim(outliers_animal_products))
+print(dim(outliers_ANIMALPRODUCTS_GOAL_RT))
 
 
-# # test if there are outliers 1.5 times the interquartile range
-# 
-# #find Q1, Q3, and interquartile range for values in column A
-# Q1 <- quantile(clean_data_goalsetting_TG12$MEAL_GOAL_RT, .25)
-# Q3 <- quantile(clean_data_goalsetting_TG12$MEAL_GOAL_RT, .75)
-# IQR <- IQR(clean_data_goalsetting_TG12$MEAL_GOAL_RT)
-# 
-# #only keep rows in dataframe that have values outside 1.5*IQR of Q1 and Q3
-# outliers <- subset(clean_data_goalsetting_TG12, 
-#                       !(clean_data_goalsetting_TG12$MEAL_GOAL_RT > (Q1 - 1.5*IQR) 
-#                       & clean_data_goalsetting_TG12$MEAL_GOAL_RT < (Q3 + 1.5*IQR)
-#                       ))
-#                       
-# 
-# #view row and column count of new data frame
-# dim(outliers) 
 ```
 
 ```{r remove outliers}
@@ -195,17 +148,10 @@ ggplot(clean_data_goalsetting_TG12, aes(x = ANIMALPRODUCTS_GOAL_RT)) +
   geom_histogram(binwidth = 100, fill = "green") +
   theme_minimal()
 
-# ggplot(clean_data_goalsetting_TG1, aes(x = GOAL_MEAT)) +
-#   geom_histogram(binwidth = 5, fill = "pink", color = "black") +
-#   theme_minimal()
-# 
-# ggplot(clean_data_goalsetting_TG2, aes(x = GOAL_MEAT)) +
-#   geom_histogram(binwidth = 5, fill = "green", color = "black") +
-#   theme_minimal()
 
 ```
 
-Assumptions for Pearson Correlation
+Pearson Correlation
 
 ```{r test linearity MEAL_GOAL_RT-Goal meat }
 
@@ -262,6 +208,15 @@ abline(linear_model, col = "red")
 summary(linear_model)
 ```
 
+```{r test linearity all at once}
+
+# data frame only with the test variables
+test_variables_df <- clean_data_goalsetting_TG12[, c("ANIMALPRODUCTS_GOAL_RT", "GOAL_MEAT", "MEAL_GOAL_RT")]
+
+# create scatterplot will all tesvariables
+pairs(test_variables_df, pch = 18, col = "steelblue")
+```
+
 ```{r test normality}
 
 shapiro.test(clean_data_goalsetting_TG12$GOAL_MEAT)
@@ -288,9 +243,9 @@ cor(data)
 
 ```
 
-Assumptions of Multiple Linear Regression
+Multiple Linear Regression
 
-```{r test Multicollinearity ANIMALPRODUCTS_GOAL_RT-meal goal RT }
+```{r fitting the model}
 
 # info generell voraussetzungn für lineare regression :
 # https://www.statology.org/multiple-linear-regression-assumptions/
@@ -302,29 +257,15 @@ Assumptions of Multiple Linear Regression
 
 regression_model <- lm(GOAL_MEAT ~ ANIMALPRODUCTS_GOAL_RT + MEAL_GOAL_RT, data = clean_data_goalsetting_TG12)
 
-
-vif(regression_model)
-
-#under 2,5 sehr gut, über 5 schlecht
-
 ```
 
-```{r test intependence, durbin watson test }
+```{r test residual distribution}
 
-# https://www.statology.org/durbin-watson-test/
+# checking if the distribution of model residuals is approximately normal
 
-durbinWatsonTest(regression_model)
+residuals <- residuals(regression_model)
 
-# we want to keep the null hypotheses p-value higher than 0.05!
-# here 0.4-also sehr hoch!
-
-#The test statistic always ranges from 0 to 4 where:
-# d = 2 indicates no autocorrelation
-# d < 2 indicates positive serial correlation
-# d > 2 indicates negative serial correlation
-# In general, if d is less than 1.5 or greater than 2.5 
-# then there is potentially a serious autocorrelation problem.
-# hier 1.838863 also ok!
+hist(residuals(regression_model), col = "steelblue")
 
 ```
 
@@ -344,10 +285,73 @@ plot(fitted_values, std_residuals,
 
 ```
 
-```{ r test Multivariate Normality}
+```{r test Multicollinearity ANIMALPRODUCTS_GOAL_RT-meal goal RT }
+
+vif(regression_model)
+
+#under 2,5 sehr gut, über 5 schlecht
 
 ```
 
+```{r test independence, durbin watson test }
+
+# https://www.statology.org/durbin-watson-test/
+
+durbinWatsonTest(regression_model)
+
+# we want to keep the null hypotheses p-value higher than 0.05!
+# here 0.4-also sehr hoch!
+
+#The test statistic always ranges from 0 to 4 where:
+# d = 2 indicates no autocorrelation
+# d < 2 indicates positive serial correlation
+# d > 2 indicates negative serial correlation
+# In general, if d is less than 1.5 or greater than 2.5 
+# then there is potentially a serious autocorrelation problem.
+# hier 1.838863 also ok!
+
+```
+```{r test Multivariate Normality}
+
+# with Q-Q plot
+
+# Create a data frame for ggplot2
+residuals_df <- data.frame(residuals)
+
+# Create the Q-Q plot using ggplot2
+ggplot(residuals_df, aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "Q-Q Plot of Residuals")
+
+# with shapiro wilk test 
+
+shapiro_test_result <- shapiro.test(residuals)
+
+shapiro_test_result
+
+
+```
+
+```{r summary of model}
+
+summary(regression_model)
+
+# F-statistic 1.716, p-value 0.1859 -not significant! (over 0,5)
+# no variable is statistically significant Pr(>|t|) except the intercept. 
+# Estimate: a one unit increase in ANIMALPRODUCTS_GOAL_RT is associated with a 
+# -0.0017 unit decrease, on average, in GOAL_MEAT, assuming MEAL_GOAL_RT is held 
+# constant
+
+## Assessing Goodness of fit:
+
+# Multiple R-squared:  0.03837 is the proportion of the variance in the response 
+# variable that can be explained by the predictor variables, 
+# R² is therfore: 0,0014723, 0,14% of the variance can be explained
+
+
+
+```
 
 
 
