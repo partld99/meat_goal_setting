@@ -311,6 +311,7 @@ durbinWatsonTest(regression_model)
 # hier 1.838863 also ok!
 
 ```
+
 ```{r test Multivariate Normality}
 
 # with Q-Q plot
@@ -353,6 +354,31 @@ summary(regression_model)
 
 ```
 
+stepwise forward regression
+
+```{r stepwise forward regression}
+
+# explanation: https://www.statology.org/stepwise-regression-r/
+
+# Define your data
+data <- clean_data_goalsetting_TG12
+
+# Define the intercept-only model
+intercept_only <- lm(GOAL_MEAT ~ 1, data = data)
+
+# Define the model with all predictors
+all_predictors <- lm(GOAL_MEAT ~ ANIMALPRODUCTS_GOAL_RT + MEAL_GOAL_RT, data = data)
+
+# Perform forward stepwise regression
+forward <- step(intercept_only, direction = 'forward', scope = formula(all_predictors), trace = 1) # trace = 1 shows the steps
+
+# View the results of forward stepwise regression
+print(forward$anova)
+
+# View the final model coefficients
+print(forward$coefficients)
+
+```
 
 
 
