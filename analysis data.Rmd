@@ -1,0 +1,216 @@
+---
+title: "analysis data"
+author: "Denise Partl"
+date: "2025-03-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+library(dplyr)
+library(psych)
+library(misty)
+library(tidyverse)
+library(ggplot2)
+library(carData)
+library(car)
+
+
+setsource()
+#list.files("../Data/")
+data_all <- read.csv("../Data/clean_wave2_apc.csv")
+
+
+```
+
+Data observation
+
+```{r general observation}
+
+dim(data_all)   # number rows and colums
+head(data_all)  # first 6 cases
+tail(data_all)  # last 6 cases
+
+#create summary table
+describe(data_all)
+
+```
+
+```{r observing groups and deleting the control group}
+
+# group treatment conditions by id and count the nr of participant in each condition
+
+data_conditions_grouped <- data_all %>% 
+  group_by(id_subj) %>% 
+  reframe(unique_conditions = paste(unique(cat_condition), collapse = ", "))
+
+participant_counts <- data_conditions_grouped %>%
+  group_by(unique_conditions) %>%
+  summarize(participant_count = n())
+
+print(participant_counts)
+
+# delete the control group, as it does not include the goal setting
+data_treatment <- data_all %>%
+  filter(cat_condition != "control")
+
+# cleaning the environment
+rm(data_conditions_grouped)
+
+```
+
+```{r observing exclusion criteria}
+# group dietary preferences by id and cound nr of participants in each condition
+
+data_diet_grouped <- data_treatment %>%
+  group_by(id_subj) %>% 
+  reframe(unique_conditions = paste(unique(cat_pre_diet), collapse = ", "))
+
+participant_counts <- data_diet_grouped %>%
+  group_by(unique_conditions) %>%
+  summarize(participant_count = n())
+
+print(data_diet_grouped)
+print(participant_counts)
+
+#goal setting of pescetarians -most set a goal, if I add these I should explain fish
+pescetarian_meat_goals <- data_treatment %>%
+  filter(cat_pre_diet == "pescetarian") %>%
+  select(val_goal_meat)
+
+print(pescetarian_meat_goals)
+
+# gender identity 
+
+data_treatment %>%
+  filter(!cat_gender %in% c("Weiblich", "Männlich")) %>%
+  group_by(id_subj) %>% 
+  reframe(unique_genders = paste(unique(cat_gender), collapse = ", "),
+          unique_conditions = paste(unique(cat_condition), collapse = ", "))
+
+# nogender_data <- final_data %>%
+#   filter(id_subj %in% c("P121", "P122", "P148", "P174"))
+# 
+# view(nogender_data)
+# when doing this, you can see that the others have only missing data and the one
+# with "keine Angabe" is vegetarian, so not interesting
+
+
+# new df without exclusions
+data_treatment <- data_all %>%
+  filter(cat_condition != "control")
+
+# clean the environment
+rm(data_diet_grouped,participant_counts, pescetarian_meat_goals)
+
+```
+
+```{r example participant P35}
+# observe data of p35 
+
+P35_data <- data_treatment %>%
+  filter(id_subj == "P35")
+
+# view the data in a new tab.
+View(P35_data)
+
+# clean the environment
+rm(P35_data)
+```
+
+```{r create workable data frame} 
+
+# I want to have only the unseful data, and not 25 lines for each participant
+
+# first delete the distinction between the id's
+# cat_phase, started_ts, expired_ts, uploaded_ts, cat_meal, bool_meat, bool_dairy, bool_egg, bool_other
+# delete the identical rows, now number of rows is number ob participant
+
+data_no_double_id_no_meat_consumption <- data_treatment %>%
+  select(!c(cat_phase, started_ts, expired_ts, uploaded_ts, cat_meal, bool_meat, 
+            bool_dairy, bool_egg, bool_other)) %>%
+  distinct() # remove identical rows
+
+print(data_no_double_id_no_meat_consumption)
+
+# now I want to remove all the latent data items from the pre-survey, keep val pre?
+# are thes the scores?
+
+final_data <- data_no_double_id_no_meat_consumption %>%
+    select(id_subj, cat_condition, cat_condition, cat_gender, val_age, 
+           cat_pre_diet, val_goal_meat, allergies_yes_no, allergies_yes_no_1_text,
+           val_pre_bscs, val_pre_ag, val_pre_ezsb, val_pre_gzsb, val_pre_willpower,
+           val_pre_pers_norm, val_pre_desc_norm, val_pre_inju_norm, val_pre_ag,
+           val_pre_ag, val_pre_co, val_pre_op, val_pre_ex, val_pre_em, val_pre_hh,
+           val_pre_ess
+           )
+
+
+
+print(final_data)
+
+#I need to add meat consumption
+
+```
+
+```{r observing and removing particpants with NA in goal setting and other NA}
+ 
+na_meat_goal_ids <- final_data %>%
+  filter(is.na(val_goal_meat)) 
+
+print(na_meat_goal_ids)
+
+#I need to remove the NA participants, from final_data
+
+final_data <- final_data %>%
+  filter(!is.na(val_goal_meat))
+
+print(final_data)
+
+# observing participants with NA values in remaining places
+
+data_NA_remaining <- final_data %>%
+  filter(if_any(everything(), is.na))
+
+print(data_NA_remaining)
+
+# P148 and P174 have NA in all pretest data, is there a problem 
+# or can I just remove them?
+
+
+#clean environment
+rm(na_meat_goal_ids)
+
+
+# observe data of p148 
+
+P148_data <- data_treatment %>%
+  filter(id_subj == "P148")
+
+# view the data in a new tab.
+View(P148_data)
+
+# clean the environment
+rm(P35_data)
+```
+
+```{r observing allergies and removing from final data}
+
+allergies <- final_data %>%
+  filter(allergies_yes_no == "Ja:") 
+
+print(allergies)
+
+# only one participant has an allergy and it is not meat related, therefore no
+# impact in the analysis and I can remove the allergies columns
+
+final_data <- final_data %>%
+  select(!c(allergies_yes_no, allergies_yes_no_1_text))
+
+print(final_data)
+
+#clean environment
+rm(allergies)
+
+```
+
